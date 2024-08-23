@@ -1,0 +1,140 @@
+# ResourceQuota : https://kubernetes.io/docs/concepts/policy/resource-quotas/
+#
+# Create a namespace that has a resourcequota applied to it - and some pods - some of which will fail!
+# NOTE: a ResourceQuota controls usage at the NAMESPACE level. If you need to control at the POD/CONTAINER level , use a LimitRange
+#
+# k apply -f resourcequota-demo.yaml
+#  3 pods will launch, 3 will fail (For a variety of reasons)
+# k get resourcequotas 
+#  NOTE that you can see the current usage levels
+#
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: ns-quota
+spec:
+---
+apiVersion: v1
+kind: ResourceQuota
+metadata:
+  name: demo-quota
+  namespace: ns-quota
+spec:
+  hard:
+    pods: 3
+    # NOTE: A ResourceQuota deals in aggregate TOTALS.
+    # This number is the TOTAL amount of CPU and MEMORY that can be requested in 
+    # the namespace by ALL PODS.  
+    requests.cpu: 2000m
+    requests.memory: 4096Mi
+    # This is for container writable layer, logs, and EmptyDir volumes
+    requests.ephemeral-storage: "80Gi"
+    
+    # This is a MAXIMUM for what all PODS in the NAMESPACE are allowed to use.
+    limits.cpu: 6000m
+    limits.memory: 8192Mi
+    limits.ephemeral-storage: "160Gi"
+---
+# This one will be OK 
+apiVersion: v1
+kind: Pod
+metadata:
+  name: pod1
+  namespace: ns-quota
+spec:
+  containers:
+  - image: nginx:1.18.0
+    name: nginx
+    resources:
+      requests:
+        # NOTE: To avoid any confusion, we'll use consistent units on both CPU and Memory
+        cpu: 1000m
+        memory: 256Mi
+      limits:
+        cpu: 2000m
+        memory: 1024Mi
+---
+# This will work too. But after this one launches we'll be at the REQUEST limit for the namespace
+apiVersion: v1
+kind: Pod
+metadata:
+  name: pod2
+  namespace: ns-quota
+spec:
+  containers:
+  - image: nginx:1.18.0
+    name: nginx
+    resources:
+      requests:
+        cpu: 500m
+        memory: 256Mi
+      limits:
+        cpu: 2000m
+        memory: 1024Mi
+---
+# This will fail - we already have 1500 millicpu in use, and
+# this one would put us over the 2000 millicpu requests quota.
+apiVersion: v1
+kind: Pod
+metadata:
+  name: pod3
+  namespace: ns-quota
+spec:
+  containers:
+  - image: nginx:1.18.0
+    name: nginx
+    resources:
+      requests:
+        cpu: 750m
+        memory: 256Mi
+      limits:
+        cpu: 1000m
+        memory: 1024Mi
+---
+# This will work - we'll be at 1750 millicpu and 3 pods.
+apiVersion: v1
+kind: Pod
+metadata:
+  name: pod4
+  namespace: ns-quota
+spec:
+  containers:
+  - image: nginx:1.18.0
+    name: nginx
+    resources:
+      requests:
+        cpu: 250m
+        memory: 512Mi
+      limits:
+        cpu: 1000m
+        memory: 1024Mi
+---
+# This will fail because we already have 3 pods, the limit for this ns
+apiVersion: v1
+kind: Pod
+metadata:
+  name: pod5
+  namespace: ns-quota
+spec:
+  containers:
+  - image: nginx:1.18.0
+    name: nginx
+    resources:
+      requests:
+        cpu: 100m
+        memory: 128Mi
+      limits:
+        cpu: 100m
+        memory: 1024Mi
+---
+# This will fail because it doesn't specificy Resources/Requests/Limits: 
+apiVersion: v1
+kind: Pod
+metadata:
+  name: pod6
+  namespace: ns-quota
+spec:
+  containers:
+  - image: nginx:1.18.0
+    name: nginx

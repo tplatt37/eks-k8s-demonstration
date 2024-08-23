@@ -1,0 +1,43 @@
+# Demo of the securityContext attributes in a PodSpec
+#
+# This defines two pods, using different images
+# Both are nginx, but one MUST run as root, the other does not
+# The one that requires root will FAIL because it's not allowed to run as root
+# via the securityContext settings
+#
+# k apply -f securitycontext-demo.yaml
+# k get po
+# k describe pod/nginx-non-root-will-fail
+#  (Take a look at Events)
+#
+#
+apiVersion: v1
+kind: Pod
+metadata:
+  name: nginx-non-root-will-fail
+spec:
+  containers:
+  - image: nginx:1.18.0
+    name: secured-container
+    securityContext:
+    
+      # k explain pod.spec.securityContext.runAsNonRoot
+      # Indicates that the container must run as a non-root user. If true, the
+      # Kubelet will validate the image at runtime to ensure that it does not run
+      # as UID 0 (root) and fail to start the container if it does.  
+      runAsNonRoot: true
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: nginx-non-root-will-work
+spec:
+  # Applying an attribute at the POD level
+  securityContext:
+    fsGroup: 3500
+  containers:
+  - image: bitnami/nginx:latest
+    name: secured-container
+    # Applying an attribute at the CONTAINER level
+    securityContext:
+      runAsNonRoot: true

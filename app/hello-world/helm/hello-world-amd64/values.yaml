@@ -1,0 +1,23 @@
+#
+# These are default values used when rendering templates.
+#
+# You can override these by using arguments:
+# --set replicas=9 --set image.tag="000001"
+#
+# OR provide your own values file(s).  (preferred)
+#
+# --values my-values-dev.yaml --values my-config.yaml
+#
+
+image:
+  # URI of image repository
+  # Don't add quotes to this - you'll mess up a sed somewhere else!
+  repository: 123456789012.dkr.ecr.us-east-1.amazonaws.com/hello-world-nodejs
+  # Tag
+  tag: "v1.0.0"
+
+# Use this to ensure you aren't pulling a cached image (not normally an issue)
+#imagePullPolicy: "Always"
+
+# Replicas is optional - will default to 3 (see template)
+# replicas: 6

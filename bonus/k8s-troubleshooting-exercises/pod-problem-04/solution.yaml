@@ -1,0 +1,32 @@
+# 
+# nginx must run as root...
+#
+#
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: q4
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  labels:
+    run: test
+  name: test
+  namespace: q4
+spec:
+  containers:
+  - env:
+    - name: DB_URL
+      value: postgresql://mydb:5432
+    - name: DB_USERNAME
+      value: admin
+    image: nginx:1.19.0
+    # (Or find another nginx image that doesn't require root)
+    # (or find another web server / reverse proxy that doesn't require root)
+    # image: bitnami/nginx
+    name: test
+    securityContext:
+      # This nginx image has to run as root, unfortunately that's all we can do if we have to use this particular image.
+      runAsNonRoot: false
+  dnsPolicy: ClusterFirst

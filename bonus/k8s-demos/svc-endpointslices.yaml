@@ -1,0 +1,65 @@
+# Service Advanced Demo
+#
+# The difference between endpoint (ep) and endpointslices.
+#
+# If we have a service with 500 pods -that's one BIG, GIANT ep object
+# and that BIG GIANT object has to get communicated to EVERY NODE EVERY TIME a Pod Replica is added or goes away - Yikes!
+# Instead of having one big ep object we can have 5 smaller endpointslices - which can be handled more efficiently as pods come and go
+# (Only the endpointslice containing the pod needs to be changed)
+#
+# k apply -f endpointslices.yaml
+# k get ep
+# k get endpointslices
+#
+#
+# It will look something like this:
+# k get endpointslices
+#NAME               ADDRESSTYPE   PORTS   ENDPOINTS                                                     AGE
+#kubernetes         IPv4          443     192.168.171.154,192.168.220.216                               44h
+#php-apache-8hqmv   IPv4          80      192.168.198.55,192.168.222.43,192.168.197.64 + 97 more...     5m19s
+#php-apache-gdsvt   IPv4          80      192.168.154.32,192.168.157.173,192.168.151.208 + 97 more...   6m37s
+#php-apache-jr2qg   IPv4          80      192.168.210.9,192.168.219.35,192.168.207.71 + 97 more...      4m37s
+#php-apache-mrchz   IPv4          80      192.168.201.40,192.168.223.241,192.168.216.4 + 97 more...     3m6s
+#php-apache-vlppp   IPv4          80      192.168.205.180,192.168.198.67,192.168.217.181 + 97 more...   3m10s
+#
+#
+#
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: hello-world-eps
+spec:
+  selector:
+    matchLabels:
+      run: hello-world-eps
+  #
+  # WARNING: This will cause cluster to autoscale. But we want to show the difference
+  # between endpoint (ep) and endpoint slices
+  replicas: 500
+  #
+  #
+  template:
+    metadata:
+      labels:
+        run: hello-world-eps
+    spec:
+      containers:
+      - name: hello-world-eps
+        #
+        # Pull from your own ecr to avoid any public/anon throttling 
+        #
+        image: 123456789012.dkr.ecr.us-east-1.amazonaws.com/hello-world-nodejs:v1.0.0
+        ports:
+        - containerPort: 3000
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: hello-world-eps
+  labels:
+    run: hello-world-eps
+spec:
+  ports:
+  - port: 80
+  selector:
+    run: hello-world-eps

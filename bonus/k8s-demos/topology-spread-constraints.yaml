@@ -1,0 +1,90 @@
+# Topology Spread Constraints: https://kubernetes.io/docs/concepts/scheduling-eviction/topology-spread-constraints/
+#
+# You can use topology spread constraints to control how Pods are spread across your cluster among failure-domains
+# such as regions, zones, nodes, and other user-defined topology domains.
+# This can help to achieve high availability as well as efficient resource utilization.
+# https://kubernetes.io/docs/concepts/scheduling-eviction/topology-spread-constraints/
+#
+# k apply -f topology-spread-constraints.yaml
+# k get svc -A -o wide
+#
+# NOTE: This is incomplete. TODO: Waiting for minDomains to be available. 2023-02-16
+#
+#
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: demo-spread
+  labels:
+    demo: service
+spec:
+  selector:
+    matchLabels:
+      app: hello-world-spread
+  replicas: 18
+  template:
+    metadata:
+      labels:
+        app: hello-world-spread
+    spec:
+      #
+      # k explain pod.spec.topologySpreadConstraints
+      #
+      topologySpreadConstraints:
+        # How it finds matching pods
+        - labelSelector:
+            matchLabels:
+              app: hello-world-spread
+          #
+          #
+          #
+          maxSkew: 2
+          #
+          # "Nodes that have a label with this key and identical values
+          #  are considered to be in the same topology."
+          # topology.kubernetes.io/zone
+          # kubernetes.io/hostname
+          #
+          topologyKey: topology.kubernetes.io/zone
+          #
+          # "MinDomains indicates a minimum number of eligible domains."
+          #
+          # Alpha feature that must be enabled via Feature Gate
+          # but can't do that (yet) with eksctl and managedNodeGroups (only self managed)
+          # minDomains: 5
+          #
+          whenUnsatisfiable: DoNotSchedule
+          #
+          # Coming later in v1.25 
+          #matchLabelKeys:
+          #  - app
+          #  - pod-template-hash
+      #
+      containers:
+      - name: hello-world
+        image: 123456789012.dkr.ecr.us-east-1.amazonaws.com/hello-world-nodejs:v1.0.0
+        env:
+        - name: FAIL_ON_PURPOSE
+          value: "0"
+        ports:
+        - containerPort: 3000
+          name: nodejs
+      # Second container is a simple busybox image so we have a place to run diagnostic commands.
+      - name: busybox
+        image: busybox
+        command:
+        - sleep
+        - "3600"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: hello-world-spread
+spec:
+  type: ClusterIP
+  selector:
+    app: hello-world-spread
+  ports:
+  - port: 80
+    targetPort: 3000

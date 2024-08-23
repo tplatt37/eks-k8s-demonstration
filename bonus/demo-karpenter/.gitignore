@@ -1,0 +1,7 @@
+controller-policy.json
+controller-trust-policy.json
+node-trust-policy.json
+aws-auth.yaml
+aws-auth-updated.yaml
+karpenter.yaml
+karpenter-updated.yaml

@@ -1,0 +1,33 @@
+# Demo of a simple deployment 
+# *** in default namespace ***
+#
+# k apply -f deployment.yaml
+# k get all
+# k port-forward -n default po/PODNAME 8080:3000
+# (Preview Running Application in Cloud9)
+# k delete -f deployment.yaml
+#
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: deploy-demo
+  labels:
+    demo: deploy
+spec:
+  selector:
+    matchLabels:
+      app: hello-world
+  replicas: 6
+  template:
+    metadata:
+      labels:
+        app: hello-world  
+    spec:
+      containers:
+      - name: hello-world
+        image: 123456789012.dkr.ecr.us-east-1.amazonaws.com/hello-world-nodejs:v1.0.0
+        ports:
+        - containerPort: 3000
+          name: nodejs
+

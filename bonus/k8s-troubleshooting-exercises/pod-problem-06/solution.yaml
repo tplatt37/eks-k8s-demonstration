@@ -1,0 +1,42 @@
+#
+# Observe error:
+# k describe po -n q6
+# Name is wrong on line 42.  Fix it, then
+# k apply -f setup.yaml
+#
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: q6
+spec:
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: secret-password
+  namespace: q6
+type: opaque
+stringData:
+  PASSWORD: mypassword
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: pod1
+  namespace: q6
+spec:
+  containers:
+  - image: nginx:1.19.0
+    name: app
+    # 
+    # Mount secret via volume (tmpfs backed)
+    #
+    volumeMounts:
+    - name: secret-volume
+      mountPath: /var/app
+      readOnly: true
+  volumes:
+  - name: secret-volume
+    secret:
+      secretName: secret-password

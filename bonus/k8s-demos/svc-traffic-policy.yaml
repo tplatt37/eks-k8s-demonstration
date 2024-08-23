@@ -1,0 +1,60 @@
+# Advanced Service Demo
+#
+# This shows a Daemonset exposed by a Service that uses the Service Internal Traffic Policy (k8s 1.26+)
+#
+# This feature will keep internal service requests local to the node that the request originated on.
+#
+# k apply -f daemonset-svc-traffic-policy.yaml
+# k run debugger --rm -i --tty --image nicolaka/netshoot
+# curl hello-world-ds
+#
+# Run that command multiple times, you'll be "pinned" to the same pod every time.
+# The Pod name in the page should be the ds pod replica on the same node as the temporary pod.
+#
+# Run this command (BEFORE YOU EXIT Debugger) to show they are both on the same node:
+# k describe no/$(kubectl get pod debugger -o jsonpath='{.spec.nodeName}')
+#
+# Please note there is also an externalTrafficPolicy - which would be used with NodePort services
+# k explain svc.spec.externalTrafficPolicy
+#
+#
+
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: hello-world-ds
+  namespace: default
+  labels:
+    service: hello-world-ds
+spec:
+  selector:
+    matchLabels:
+      name: hello-world-ds
+  template:
+    metadata:
+      labels:
+        name: hello-world-ds
+    spec:
+      containers:
+      - name: hello-world
+        image: 123456789012.dkr.ecr.us-east-1.amazonaws.com/hello-world-nodejs:v1.0.0
+        ports: 
+        - containerPort: 3000
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: hello-world-ds
+spec:
+  type: ClusterIP
+  selector:
+    name: hello-world-ds
+  #
+  # The kube-proxy filters the endpoints it routes to based on the spec.internalTrafficPolicy setting. When it's set to Local, only node local endpoints are considered. 
+  # When it's Cluster (the default), or is not set, Kubernetes considers all endpoints.
+  #
+  internalTrafficPolicy: Local
+  
+  ports:
+  - port: 80
+    targetPort: 3000

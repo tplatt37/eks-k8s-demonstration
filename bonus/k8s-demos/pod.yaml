@@ -1,0 +1,17 @@
+# Pod: https://kubernetes.io/docs/concepts/workloads/pods/
+#
+
+apiVersion: v1
+kind: Pod
+metadata:
+  name: pod-demo
+  labels:
+    demo: deploy
+spec:
+    containers:
+    - name: hello-world
+      image: 123456789012.dkr.ecr.us-east-1.amazonaws.com/hello-world-nodejs:v1.0.0
+      ports:
+      - containerPort: 3000
+        name: nodejs
+

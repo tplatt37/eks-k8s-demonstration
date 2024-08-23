@@ -1,0 +1,18 @@
+#
+# Slide 23 - Module 8 Storage
+#
+#
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: app-pvc
+  namespace: default
+spec:
+  accessModes:
+    - ReadWriteOnce
+  volumeMode: Filesystem
+  storageClassName: ebs-gp3-encrypted
+  resources:
+    requests:
+      # Using an odd size - easier to find it in the console!
+      storage: 7Gi

@@ -1,0 +1,74 @@
+# Simple ConfigMap demo
+#
+# ConfigMap: https://kubernetes.io/docs/concepts/configuration/configmap/
+# 
+# Shows defining a ConfigMap and then making the values accessible in a Pod via:
+# 1) Environment variables
+# 2) Volume mount
+#
+# Which method is better?  Read the comments below to find out.
+# 
+# NOTE: It's unusual to be mapping them in TWO DIFFERENT WAYS. 
+# But this makes for a more streamlined demo and we can compare and contrast in the SAME Pod. 
+#
+# k apply -f configmap.yaml
+# k exec configmap-demo -- env
+# k exec -it configmap-demo -- /bin/sh
+# env
+# ls -lha /etc/config/
+# cat /etc/config/DATABASE_URL
+# 
+#
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: backend-config
+data:
+  DATABASE_URL: jdbc:postgresql://localhost/test 
+  PORT: "9200"
+  USER: db_user  
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: configmap-demo 
+spec:
+  containers:
+  - image: nginx:1.19.0
+    name: app
+    #
+    # As Environment Variables
+    # The Environment variables are set at startup, AND NEVER CHANGE
+    # If you run the "env" command you can see all the environment variables
+    #
+    envFrom:
+    - configMapRef:
+        name: backend-config
+    # 
+    # One particular environment variable, overriding the name (effetively)
+    #
+    env:
+    - name: DB_URL_OVERRIDE
+      valueFrom:
+        configMapKeyRef:
+          name: backend-config
+          key: DATABASE_URL
+    #
+    # Mount config as a volume
+    # This is considered BETTER than Environment variables for two reasons:
+    # 1) They won't get dumped to console if someone runs "env"
+    # 2) Your code can monitor the file system path for changes and reload/GET THE LATEST VALUES 
+    #
+    # You can then view these via :
+    # k exec -it configmap-demo -- /bin/sh
+    # ls /etc/config
+    # cat /etc/config/DATABASE_URL
+    # exit 
+    #
+    volumeMounts:
+    - name: config-volume
+      mountPath: /etc/config
+  volumes:
+  - name: config-volume
+    configMap:
+      name: backend-config

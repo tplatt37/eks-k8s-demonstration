@@ -1,0 +1,47 @@
+# An Ingress - A Layer 7 Load Balancer (Application Load Balancer)
+#
+# ***
+# NOTE: This will not work unless you created the service-hello-world-nodeport first!
+# ***
+#
+# k apply -f service-hello-world-ingress.yaml
+# k get ingress -A -o wide
+# (Pull up the ALB DNS name in your web browser using http://)
+# 
+# REMEMBER: An Ingress is NOT a Service. It sits in front of service(s), like NodePorts
+# To provide one single point of entry to multiple backend services.
+# (This simple example is 1 Ingress in front of 1 Service though...)
+#
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: hello-world-ingress
+  annotations:
+  
+    # This will be handled by the AWS Load Balancer Controller:
+    # https://kubernetes-sigs.github.io/aws-load-balancer-controller/v2.4/guide/ingress/annotations/
+    kubernetes.io/ingress.class: alb
+    alb.ingress.kubernetes.io/scheme: internet-facing
+    #
+    # NOTE: There are two modes - IP and Instance
+    # IP is more efficient, packets will be sent DIRECT to the PODs!
+    # We can do this because each Pod gets an IP that is routable on the VPC - thanks to CNI.
+    # If you go look at the TARGET GROUP for this ALB, it will have the POD IPs in it (192.168.*)
+    #
+    alb.ingress.kubernetes.io/target-type: ip
+    #
+    # If we used INSTANCE MODE, the packets would be sent to the NodePort 
+    # https://kubernetes-sigs.github.io/aws-load-balancer-controller/v2.2/guide/service/nlb/
+    
+spec:
+  rules:
+    - http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              # Ingress sitting in front of a NodePort service we created previously.
+              service:
+                name: hello-world-np
+                port:
+                  number: 80

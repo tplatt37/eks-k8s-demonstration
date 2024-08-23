@@ -1,0 +1,65 @@
+# Rolling Update vs Recreate
+#
+# Use this to compare/contrast "RollingUpdate" vs "Recreate"
+#
+# kubectl apply -f rollingupdate-vs-recreate.yaml && sleep 10 && kubectl rollout restart deploy/rolling-nginx && kubectl rollout restart deploy/recreate-nginx && watch kubectl get all
+#
+# Notice that the "Recreate" pods get recreated at the same time, while Rolling is a slow, gradual process (WITH OVERLAPPING VERSIONS RUNNING AT THE SAME TIME!)
+#
+# NOTE: The Pods take awhile to terminate because they don't handle SIGTERM - they are being SIGKILLed after 30 seconds (Grace Period)
+# This is OK becase it gives us more time to talk about what is happening.
+#
+# Ask the students:
+# Which method is FASTER? (Recreate)
+# Which method results in NO OUTAGE? (RollingUpdate)
+# Which method as TWO DIFFERENT VERSIONS of the code (if you were doing an image update) running at the SAME TIME?  (RollingUpdate)
+#
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: rolling-nginx
+spec:
+  replicas: 10
+  strategy:
+    # k explain deployments.spec.strategy.type
+    # Can be "Recreate" or "RollingUpdate" (Default)
+    type: RollingUpdate
+    rollingUpdate: 
+      maxSurge: 2
+      maxUnavailable: 1
+  selector:
+    matchLabels:
+      app: nginx
+  template:
+    metadata:
+      name: nginx
+      labels:
+        app: nginx
+    spec:
+      containers:
+      - name: nginx
+        image: nginx:1.8
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: recreate-nginx
+spec:
+  replicas: 10
+  strategy:
+    # k explain deployments.spec.strategy.type
+    # Can be "Recreate" or "RollingUpdate" (Default)
+    type: Recreate
+  selector:
+    matchLabels:
+      app: nginx
+  template:
+    metadata:
+      name: nginx
+      labels:
+        app: nginx
+    spec:
+      containers:
+      - name: nginx
+        image: nginx:1.8
+

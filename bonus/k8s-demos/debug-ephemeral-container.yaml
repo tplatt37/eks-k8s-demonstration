@@ -1,0 +1,79 @@
+#
+# Example of how to use [NEW "debug" action of Kubectl](https://kubernetes.io/docs/tasks/debug/debug-application/debug-running-pod/#ephemeral-container) - which creates an ephemeral container that SHARES THE PROCESS namespace of an existing container.
+#
+# This let's you debug and investigate distroless images that have no shell or debugging tools.
+# (You know - like super minimal attack surface images made via multi-stage builds!)
+#
+#
+# k apply -f debug-ephemeral-container.yaml
+# POD_NAME=$(kubectl get pods -l demo=k-debug-demo -o=jsonpath='{.items..metadata.name}' | tr ' ' '\n' | tail -1) && echo $POD_NAME 
+#
+# k exec -it po/$POD_NAME -- /bin/sh
+# (This is the "main" container - it's isolated from x-ray container - show the ps to prove it)
+# ps aux 
+# (PID 1 will be node)
+# exit
+# k exec -it po/$POD_NAME -c x-ray-daemon -- /bin/sh
+# (Will fail - that container image DOES NOT HAVE ANY SHELL included)
+#
+# We'll use kubectl debug to inject an EPHEMERAL container into the pod that will SHARE PROCESS NAMESPACE with the "target"
+# kubectl debug -it po/$POD_NAME --image nicolaka/netshoot --target x-ray-daemon
+#
+# ps aux
+# kill 1
+# OR
+# kill -9 1
+# exit
+#
+# k get po 
+# Notice that X-Ray-Daemon container has been restarted by Kubelet
+#
+# k describe po/$POD_NAME
+#
+# The "Events" should show the container being restarted.
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: k-debug-demo
+  labels:
+    demo: k-debug-demo
+spec:
+  selector:
+    matchLabels:
+      demo: k-debug-demo
+  replicas: 4
+  template:
+    metadata:
+      labels:
+        demo: k-debug-demo
+    spec:
+      containers:
+      
+      # "Main" container (although k8s does NOT differentiate one container from another officially)
+      - name: hello-world
+        image: 123456789012.dkr.ecr.us-east-1.amazonaws.com/hello-world-nodejs:v1.0.0
+        ports:
+        - containerPort: 3000
+          name: nodejs
+              
+      # Sidecar - the x-ray-daemon. There is NO interactive shell provided in this base image
+      - name: x-ray-daemon
+        image: public.ecr.aws/xray/aws-xray-daemon:latest
+        ports: 
+        - containerPort: 2000
+        resources:
+          requests:
+            cpu: "250m"
+          limits:
+            cpu: "500m"
+        env:
+        - name: AWS_REGION
+          value: "us-east-1"
+
+  
+ 
+#
+# Example message when you try to start a shell in x-ray:
+# error: Internal error occurred: error executing command in container: failed to exec in container: failed to start exec "ec90e59f436a31de4383dfadd33f9adb23e42791def7c345dd741f406b316402": OCI runtime exec failed: exec failed: unable to start container process: exec: "/bin/sh": stat /bin/sh: no such file or directory: unknown
+#

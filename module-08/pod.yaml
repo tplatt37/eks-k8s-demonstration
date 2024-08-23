@@ -1,0 +1,15 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: ebs-demo 
+spec:
+  containers: 
+  - name: stateful-app
+    image: nginx
+    volumeMounts:
+    - mountPath: "/data"
+      name: data-volume
+  volumes:
+    - name: data-volume
+      persistentVolumeClaim:
+        claimName: app-pvc

@@ -1,0 +1,31 @@
+# Simple Service (and a Deployment first)
+#
+# k apply -f deployment.yaml
+# k apply -f service-hello-world.yaml
+# k get svc -A -o wide
+# k port-forward svc/hello-world 8080:80
+# (Preview running application, should see page)
+# Make sure you add :8080 after the host
+# 
+# If desired, talk about CoreDNS
+# Service will get a DNS entry for hello-world.default.svc.cluster.local
+# Run an nslookup in the busybox container of one of the pods.
+# k get po 
+# k exec -it PODNAME -c busybox -- nslookup hello-world
+#
+# You can also see the endpoints via:
+# k get endpoints
+#
+#
+#
+apiVersion: v1
+kind: Service
+metadata:
+  name: hello-world
+spec:
+  type: ClusterIP
+  selector:
+    app: hello-world
+  ports:
+  - port: 80
+    targetPort: 3000

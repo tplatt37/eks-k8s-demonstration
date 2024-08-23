@@ -1,0 +1,29 @@
+#
+# This is the declarative/manifest equivalent of:
+# k autoscale deployment php-apache --cpu-percent=5 --min=2 --max=200
+#
+
+# v2 - can scale on CPU, Memory, multiple metrics, or custom metrics: https://kubernetes.io/docs/tasks/run-application/horizontal-pod-autoscale/
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: demo-hpa
+spec:
+  minReplicas: 2
+  maxReplicas: 200
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: demo-hpa
+  
+  #
+  # https://kubernetes.io/docs/tasks/run-application/horizontal-pod-autoscale/
+  #
+  metrics:
+    - type: Resource
+      resource:
+        name: cpu
+        target: 
+          type: Utilization
+          # 30% is kind of low, but that makes it easier to demo scaling.
+          averageUtilization: 30

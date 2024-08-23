@@ -1,0 +1,39 @@
+# Sets up a LoadBalancer service, with an NLB
+# You *MUST* have the AWS Load Balancer Controller installed for this to work!
+#
+# k apply -f deployment.yaml
+# k apply -f service-hello-world-loadbalancer.yaml
+# k get svc -A -o wide
+#
+# It will take 3-4 minutes for the URL to work...
+#
+#
+apiVersion: v1
+kind: Service
+metadata:
+  name: hello-world-nlb
+  #
+  # These annotations ensure that the AWS Load Balancer Controller will handle provisioning , as opposed to the in-tree controller (which is deprecated)
+  # See here: https://docs.aws.amazon.com/eks/latest/userguide/network-load-balancing.html
+  annotations:
+
+    # See: https://kubernetes-sigs.github.io/aws-load-balancer-controller/v2.4/guide/service/annotations/
+    service.beta.kubernetes.io/aws-load-balancer-type: external
+    # Can be ip (individual Pod IPs) or instance (NodePorts on the worker nodes)
+    service.beta.kubernetes.io/aws-load-balancer-nlb-target-type: ip
+    service.beta.kubernetes.io/aws-load-balancer-scheme: internet-facing
+
+    # You can limit inbound IPs using this (Replace 0.0.0.0/0 with a specific CIDR.)
+    # NLBs don't use security groups. This annotation will cause an INBOUND Rule in the Clusters Node security group to allow traffic in from this IP range.
+    # You *must* have the preserve_client_ip enabled for this to work (The rule requires the client IP).
+    # https://kubernetes-sigs.github.io/aws-load-balancer-controller/v2.4/guide/service/nlb/#security-group
+    # "AWS currently does not support attaching security groups to NLB. To allow inbound traffic from NLB, the controller automatically adds inbound rules to the worker node security groups by default."
+    #service.beta.kubernetes.io/aws-load-balancer-target-group-attributes: preserve_client_ip.enabled=true
+    #service.beta.kubernetes.io/load-balancer-source-ranges: 0.0.0.0/0
+spec:
+  type: LoadBalancer
+  selector:
+     app: hello-world
+  ports:
+  - port: 80
+    targetPort: 3000

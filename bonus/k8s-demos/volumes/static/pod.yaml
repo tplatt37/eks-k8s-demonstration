@@ -1,0 +1,18 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: my-pod
+spec:
+  # I have found it necessary to pin the pod to a node in the same AZ as the volume
+  # The Scheduler doesn't seem capable of doing this, despite what the slides imply.
+  nodeName: SET_THIS_TO_A_NODE_IN_SAME_AZ_AS_VOLUME
+  containers:
+  - name: nginx
+    image: nginx
+    volumeMounts:
+    - mountPath: "/data"
+      name: my-volume
+  volumes:
+  - name: my-volume
+    persistentVolumeClaim:
+      claimName: ebs-statically-provisioned-claim

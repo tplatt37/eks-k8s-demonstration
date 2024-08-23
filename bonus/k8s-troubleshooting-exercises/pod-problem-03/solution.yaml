@@ -1,0 +1,99 @@
+# 
+# Solution 01
+# There's not a problem, really, but because restartPolicy defaults to 
+# Always - the control loop is wanting to to restart the pod, over and over and over.
+# Solution: set to Never or (probably better) OnFailure
+#
+#
+apiVersion: v1
+kind: Pod
+metadata: 
+  labels:
+    run: solution01a
+  name: solution01a
+  namespace: q3
+spec:
+  containers:
+  - args:
+    - /bin/sh
+    - -c
+    # This will be Return Code 0 and therefore interpreted as having succeeded.
+    # It will not be Restarted.
+    - 'for i in 1 2 3 4 5 6 7 8 9 10; do echo "Hello! Loop $i times"; done;'
+    env:
+    - name: DB_URL
+      value: postgresql://mydb:5432
+    - name: DB_USERNAME
+      value: admin
+    image: busybox
+    name: test01
+  #
+  # k explain pods.spec.restartPolicy
+  # Set to Never or OnFailure instead of the default of Always
+  # 
+  restartPolicy: OnFailure
+  dnsPolicy: ClusterFirst
+---
+apiVersion: v1
+kind: Pod
+metadata: 
+  labels:
+    run: solution01b
+  name: solution01b
+  namespace: q3
+spec:
+  containers:
+  - args:
+    - /bin/sh
+    - -c
+    # This returns a non-Zero return code - so it will be interpreted as having FAILED
+    # In which case we DO want it to retry.
+    - 'for i in 1 2 3 4 5 6 7 8 9 10; do echo "Hello! Loop $i times"; done; exit 1;'
+    env:
+    - name: DB_URL
+      value: postgresql://mydb:5432
+    - name: DB_USERNAME
+      value: admin
+    image: busybox
+    name: test01
+  #
+  # k explain pods.spec.restartPolicy
+  # Set to Never or OnFailure instead of the default of Always
+  # 
+  restartPolicy: OnFailure
+  dnsPolicy: ClusterFirst
+---
+# Solution 02
+#
+# For something like this, you might want to consider creating it as a Job.
+# If we run this as a Job - the expectation is we have a container that runs
+# Then stops - and it's done.
+# 
+# https://kubernetes.io/docs/concepts/workloads/controllers/job/
+#
+apiVersion: batch/v1
+kind: Job
+metadata:
+  labels:
+    run: solution02
+  name: solution02
+  namespace: q3
+spec:
+  template:
+    spec:
+      containers:
+      - args:
+        - /bin/sh
+        - -c
+        - 'for i in 1 2 3 4 5 6 7 8 9 10; do echo "Hello! Loop $i times"; done;'
+        env:
+        - name: DB_URL
+          value: postgresql://mydb:5432
+        - name: DB_USERNAME
+          value: admin
+        image: busybox
+        name: test01
+      # Still need this! It's required for a Job.
+      # Only a RestartPolicy equal to Never or OnFailure is allowed.
+      restartPolicy: OnFailure
+      dnsPolicy: ClusterFirst

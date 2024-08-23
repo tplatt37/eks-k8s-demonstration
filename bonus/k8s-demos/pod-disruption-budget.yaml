@@ -1,0 +1,57 @@
+# Pod Disruption Budget (PDB): https://kubernetes.io/docs/tasks/run-application/configure-pdb/
+#
+# NOTE: this is disruptive because it involves draining ALL THE NODES
+#
+# Apply this manifest
+# You'll need to temporarily disable autoscaling
+# You'll need to:
+#  kubectl drain NODE --ignore-daemonsets --delete-emptydir-data 
+# ... for all the nodes
+#
+# The final node should NOT allow you to fully drain due to the PDB.
+#
+# Error will be similar to:
+# error when evicting pods/"pdb-demo-68b4686f48-db44t" -n "default" (will retry after 5s): 
+# Cannot evict pod as it would violate the pod's disruption budget.
+#
+# Please note that operations like deleting the pod, rollout restart, deleting the deployment DO NOT abide by PDBs! 
+# It's only things that EVICT the pod.
+#
+# First, the deployment, and 6 replicas
+#
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: pdb-demo
+  labels:
+    demo: pdb
+spec:
+  selector:
+    matchLabels:
+      demo: pdb
+  replicas: 6
+  template:
+    metadata:
+      labels:
+        demo: pdb
+    spec:
+      containers:
+      - name: hello-world
+        image: 123456789012.dkr.ecr.us-east-1.amazonaws.com/hello-world-nodejs:v1.0.0
+        ports:
+        - containerPort: 3000
+          name: nodejs
+---
+#
+# Now, the PDB
+#
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: pdb-demo
+spec:
+  # We want 2 or more running at all times...
+  minAvailable: 2
+  selector:
+    matchLabels:
+      demo: pdb

@@ -1,0 +1,66 @@
+# Sets up a LoadBalancer service, with an NLB
+# And uses an SSL/TLS certificate from ACM (and CNAME record from Route53 Hosted Zone)
+# You *MUST* have the AWS Load Balancer Controller installed for this to work!
+#
+# NOTE: MANUAL STEPS REQUIRED!
+#
+# Go to ACM. Create a certificate, grab the ARN
+# Replace the ARN in the annotation below
+#
+# k apply -f deployment.yaml
+# k apply -f service-hello-world-loadbalancer-tls.yaml
+# k get svc -A -o wide
+#
+# Create a CNAME record in the Route53 Hosted Zone. 
+#
+# It will take 2-3 minutes for the URL to work...
+# But the app should then be accessible via https://app.example.com 
+#
+# IMPORTANT NOTE: This is NOT end to end encryption. The NLB is the point of SSL/TLS termination.
+#
+# NOTE: Load balancing won't look very convincing (pod name won't change much), because modern browsers heavily encourage connection re-use.
+# Show the load balancing by CURLing on the command line:
+#
+# curl https://nlb.awstrainer.com/
+#
+#
+#
+apiVersion: v1
+kind: Service
+metadata:
+  name: hello-world-nlb-tls
+  #
+  # These annotations ensure that the AWS Load Balancer Controller will handle provisioning , as opposed to the in-tree controller (which is deprecated)
+  # See here: https://docs.aws.amazon.com/eks/latest/userguide/network-load-balancing.html
+  annotations:
+
+    # See: https://kubernetes-sigs.github.io/aws-load-balancer-controller/v2.4/guide/service/annotations/
+    service.beta.kubernetes.io/aws-load-balancer-type: external
+    # Can be ip (individual Pod IPs) or instance (NodePorts on the worker nodes)
+    # instance mode makes for smoother demos (because of deregistration / health checkss)
+    service.beta.kubernetes.io/aws-load-balancer-nlb-target-type: instance
+    service.beta.kubernetes.io/aws-load-balancer-scheme: internet-facing
+
+    # You can limit inbound IPs using this (Replace 0.0.0.0/0 with a specific CIDR.)
+    # NLBs don't use security groups. This annotation will cause an INBOUND Rule in the Clusters Node security group to allow traffic in from this IP range.
+    # You *must* have the preserve_client_ip enabled for this to work (The rule requires the client IP).
+    # https://kubernetes-sigs.github.io/aws-load-balancer-controller/v2.4/guide/service/nlb/#security-group
+    # "AWS currently does not support attaching security groups to NLB. To allow inbound traffic from NLB, the controller automatically adds inbound rules to the worker node security groups by default."
+    #service.beta.kubernetes.io/aws-load-balancer-target-group-attributes: preserve_client_ip.enabled=true
+    #service.beta.kubernetes.io/load-balancer-source-ranges: 0.0.0.0/0
+    
+    # NOTE: You MUST replace the ARN here.
+    # You have to manually create the cert in ACM.
+    service.beta.kubernetes.io/aws-load-balancer-ssl-cert: arn:aws:acm:us-east-1:123456789012:certificate/e861e02e-5b7d-42ab-9cb9-b63cb86f1b48
+    
+    # Enable cross zone load balancing (OFF by default with NLBs!)
+    # to ensure we are balancing across all nodes
+    service.beta.kubernetes.io/aws-load-balancer-attributes: load_balancing.cross_zone.enabled=true
+    
+spec:
+  type: LoadBalancer
+  selector:
+     app: hello-world
+  ports:
+  - port: 443
+    targetPort: 3000

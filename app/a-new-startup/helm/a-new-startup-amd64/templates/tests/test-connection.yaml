@@ -1,0 +1,34 @@
+#
+# This simple test or (tests) can be run after installation, via:
+# helm test INSTALLATION_NAME
+#
+# It will check the clusterip service to ensure things are up and running.
+#
+# These tests are not run automatically!
+#
+apiVersion: v1
+kind: Pod
+metadata:
+  name: "{{ .Release.Name }}-test-connection"
+  namespace: "{{ .Release.Namespace }}"
+  annotations:
+    # This is how Helm identifies this as a test. Required!
+    "helm.sh/hook": test
+    
+    # Please note that the hook concept supports other events too!
+    # Helm Chart Hooks: https://helm.sh/docs/topics/charts_hooks/
+    #
+    # pre-install, post-install, pre-delete, post-delete, pre-upgrade, and post-upgrade, etc.
+    #
+    # The above hooks are automatic during install/upgrade/uninstall,
+    # but you can skip them via --no-hooks flag.
+    #
+    #
+    
+spec:
+  containers:
+    - name: wget
+      image: busybox
+      command: ['wget']
+      args: ['{{ .Release.Name }}-clusterip:80']
+  restartPolicy: Never

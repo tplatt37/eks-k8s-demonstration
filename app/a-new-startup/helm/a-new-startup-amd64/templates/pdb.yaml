@@ -1,0 +1,12 @@
+# This is used to prevent voluntary actions that might cause EVICTIONS that take our service down.
+# (An admin might disrupt our app using "kubectl drain" when working on nodes otherwise)
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: {{ .Release.Name }}-pdb
+  namespace: "{{ .Release.Namespace }}"
+spec:
+  minAvailable: 2
+  selector:
+    matchLabels:
+      app: a-new-startup

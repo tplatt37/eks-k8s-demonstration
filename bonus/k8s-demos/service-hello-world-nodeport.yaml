@@ -1,0 +1,58 @@
+# Sets up a NodePort service 
+#
+# k apply -f deployment.yaml
+# k apply -f service-hello-world-nodeport.yaml
+# k get svc -A -o wide
+#
+# To show access via the NodePort:
+# In EC2 Console, SSH into one of the workernodes
+# (or peer up your Cloud9 VPC)
+# Or start a port-forwarding session via SessionManager (requires Session Manager Plugin installed):
+# aws ssm start-session --target ANY_WORKER_NODE_INSTANCE_ID --document-name AWS-StartPortForwardingSession --parameters '{"portNumber":["32001"], "localPortNumber":["8080"]}' --region us-east-1
+#
+#
+# curl http://(worker node ip):32001
+# curl http://localhost:32001
+#
+# The service is also availabe via the ClusterIP (Inside the cluster only, of course!)
+#
+# Want to see the iptables rules that kube-proxy puts in place for this?
+# (This assumes you have aws SSM cli plugin and connectivity)
+#
+# aws ssm start-session --target WORKER_NODE_EC2_INSTANCE_ID
+#
+#
+# This will show some rules
+# sudo iptables -t nat -L 
+#
+# This will show the NODEPORT rule
+# sudo iptables -t nat -L KUBE-NODEPORTS | column -t 
+#
+# This will show the MAPPING to the CLUSTERIP
+# sudo iptables -t nat -L KUBE-SERVICES | column -t
+#
+# Want to see the RANDOM LOAD BALANCING?
+# Find a Service with KUBE-SVC in the name
+# sudo iptables -t nat -L KUBE-SVC-FE4QWR3LHG3E3Z75 | column -t
+#
+# There will be multiple lines - note that each has a RANDOM PROBABILITY
+#
+# To see the mapping to the Pod IP (or Node IP - if running in INSTANCE mode), find a service name with KUBE-SEP in the name, run this:
+#
+# sudo iptables -t nat -L KUBE-SEP-3L5H6JA7BUNNAVA7 | column -t
+#
+# You should see a 192.168.x.x. POD IP.
+#
+#
+apiVersion: v1
+kind: Service
+metadata:
+  name: hello-world-np
+spec:
+  type: NodePort
+  selector:
+     app: hello-world
+  ports:
+  - port: 80
+    targetPort: 3000
+    nodePort: 32001

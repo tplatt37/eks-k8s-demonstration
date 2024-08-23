@@ -1,0 +1,21 @@
+# This is for use with the end of module demo
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: nginx
+  namespace: my-ns
+spec:
+  selector:
+    matchLabels:
+      app: nginx
+  replicas: 12
+  template:
+    metadata:
+      labels:
+        app: nginx
+    spec:
+      containers:
+      - name: nginx
+        image: nginx
+        ports:
+        - containerPort: 80

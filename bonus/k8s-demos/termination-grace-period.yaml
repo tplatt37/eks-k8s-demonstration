@@ -1,0 +1,37 @@
+# Where we are OVERRIDING the default terminationGracePeriodSeconds
+#
+#
+# NOTE: There's nothing really to SEE except for the YAML.
+# The container will likely gracefully terminate BEFORE It hits the 90 second limit...
+#
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: deploy-demo-graceperiod
+  namespace: mynamespace
+  labels:
+    demo: deploy
+spec:
+  selector:
+    matchLabels:
+      demo: deploy
+  replicas: 6
+  template:
+    metadata:
+      labels:
+        demo: deploy
+    spec:
+    
+      # k8s will give each container in the pod 90 seconds to gracefully exit instead of the default 30s.
+      # After this period, if it is still running a KILL will be sent...
+      terminationGracePeriodSeconds: 90
+
+      # Just one container here...
+      containers:
+      - name: hello-world
+        image: 123456789012.dkr.ecr.us-east-1.amazonaws.com/hello-world-nodejs:v1.0.0 
+        ports:
+        - containerPort: 3000
+          name: nodejs
+

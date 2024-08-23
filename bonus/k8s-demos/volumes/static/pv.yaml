@@ -1,0 +1,23 @@
+#
+# This defines a STATIC PersistentVolume.  Note that it is referencing a EBS volume that must exist!
+#
+# NOTE: You MUST ensure the ebs-volume exists in the proper AZ first via:
+# ./make-volume.sh "us-east-1a"
+#
+# You will need to update/replace the volumeHandle below (starts with vol-)
+#
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: my-statically-provisioned-pv
+spec:
+  capacity:
+    storage: 4Gi
+  accessModes:
+    - ReadWriteOnce
+  storageClassName: ebs-standard
+  csi:
+    driver: ebs.csi.aws.com
+    # Change this value...
+    volumeHandle: vol-07f2472713fb7dde3
+    fsType: ext4

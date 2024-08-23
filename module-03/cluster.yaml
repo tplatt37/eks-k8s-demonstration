@@ -1,0 +1,13 @@
+apiVersion: eksctl.io/v1alpha5
+kind: ClusterConfig
+metadata:
+  # NOTE: This is similar to Module 3 example, but not exactly
+  name: MySecondEKScluster
+  region: us-east-1
+  version: "1.28"
+managedNodeGroups:
+- name: ClusterTwoNodes
+  instanceType: m5.large
+  minSize: 2
+  desiredCapacity: 2
+  maxSize: 3

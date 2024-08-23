@@ -1,0 +1,35 @@
+# 
+# Create this pod:
+# k apply -f setup.yaml 
+#
+# NOTE: The error about "Line 16" is actually referring to line 32.
+# That's because there's two manifests in this one file.
+# The problem IS at Line 16 - of the second manifest.
+# 
+# Lines 32 and 34 need proper indentation.
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: q1
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  labels:
+    run: test
+  name: test
+  namespace: q1
+spec:
+  containers:
+  - args:
+    - /bin/sh
+    - -c
+    - 'while true; do echo "Hello"; sleep 5; done'
+    env:
+    - name: DB_URL
+      value: postgresql://mydb:5432 # This line wasn't indented correctly
+    - name: DB_USERNAME
+      value: admin # This line wasn't indented correctly
+    image: busybox:1.34.0
+    name: test
+  dnsPolicy: ClusterFirst

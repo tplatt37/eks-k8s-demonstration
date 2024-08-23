@@ -1,0 +1,51 @@
+# ReplicaSet (rs): https://kubernetes.io/docs/concepts/workloads/controllers/replicaset/
+#
+# Did you know you can create your own ReplicaSets? It's much more common to use a Deployment, which will create a ReplicaSet for you.
+#
+# To create:
+# k apply -f replicaset.yaml 
+#
+# To demonstrate that a RS will ADOPT pods that match it's label selector (as long as ownerReferences are blank), do this:
+#
+# k delete rs/replicaset-demo --force
+# k apply -f pod.yaml
+# k get pods -L demo
+#  Show that one pod is running
+# k apply -f replicaset.yaml
+# k get pods -L demo
+#  NOTE that the replicaset created only 2 additional pods, because it ADOPTED the 1 existing pod that matched the selector
+#
+# NOTE: You won't see this if the RS was created via a Deployment, because a Deployment also adds a selector on pod-template-hash.
+# That label won't be present on the hand-created pod, so it will NOT be adopted.
+#
+# To show that:
+# k apply -f deployment-demo.yaml
+# k get pods -L demo
+# k get pods -L demo -L pod-template-hash
+# k get deployment/name -o yaml  
+#
+
+
+apiVersion: apps/v1
+kind: ReplicaSet
+metadata:
+  name: replicaset-demo
+  labels:
+    demo: deploy
+spec:
+  # modify replicas according to your case
+  replicas: 3
+  selector:
+    matchLabels:
+      demo: deploy 
+  template:
+    metadata:
+      labels:
+        demo: deploy 
+    spec:
+      containers:
+      - name: hello-world
+        image: 123456789012.dkr.ecr.us-east-1.amazonaws.com/hello-world-nodejs:v1.0.0
+        ports:
+        - containerPort: 3000
+          name: nodejs

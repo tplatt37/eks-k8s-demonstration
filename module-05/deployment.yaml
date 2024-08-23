@@ -1,0 +1,51 @@
+#
+# From https://k8s.io/examples/application/php-apache.yaml
+#
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: demo-hpa
+spec:
+  selector:
+    matchLabels:
+      run: demo-hpa
+  #
+  # We DO NOT want to specify a number of replicas.  Let the HPA handle it!
+  # It will default to 1 per: kubectl explain Deployment.spec.replicas  
+  #
+  # replicas: 1
+  #
+  #
+  template:
+    metadata:
+      labels:
+        run: demo-hpa
+    spec:
+      containers:
+      - name: demo-hpa
+        #
+        # This is a public image. Hopefully you won't get throttled.
+        image: httpd
+        ports:
+        - containerPort: 80
+        resources:
+          #
+          # 200m = .2 vCPU is the "Requested" resources.
+          #
+          requests:
+            cpu: 200m
+          # Set a limit too
+          limits:
+            cpu: 500m
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: demo-hpa 
+  labels:
+    run: demo-hpa
+spec:
+  ports:
+  - port: 80
+  selector:
+    run: demo-hpa

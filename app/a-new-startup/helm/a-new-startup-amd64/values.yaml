@@ -1,0 +1,22 @@
+
+# Region - When running on Fargate we can't use IMDS - so we rely on passing in Region (EC2 and Fargate)
+region: "YOUR_REGION"
+
+# DynamoDB table to use
+tableName: "a-new-startup-dev"
+
+# Replicas is optional - will default to 3 otherwise (see manifest template)
+replicas: 6
+
+image:
+  # URI of image repository
+  #
+  # NOTE: You MUST Replace:
+  # YOUR_ACCOUNT with your AWS account number
+  # YOUR_REGION with your AWS region
+  #
+  repository: YOUR_ACCOUNT.dkr.ecr.YOUR_REGION.amazonaws.com/a-new-startup
+  # Tag
+  tag: "v1.0"
+
+

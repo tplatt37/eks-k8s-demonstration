@@ -1,0 +1,33 @@
+# 
+# Create this pod:
+# k apply -f setup.yaml 
+#
+# Check the pod status.
+# What's wrong?
+# How can we fix it?
+#
+#
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: q4
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  labels:
+    run: test
+  name: test
+  namespace: q4
+spec:
+  containers:
+  - env:
+    - name: DB_URL
+      value: postgresql://mydb:5432
+    - name: DB_USERNAME
+      value: admin
+    image: nginx:1.19.0
+    name: test
+    securityContext:
+      runAsNonRoot: true
+  dnsPolicy: ClusterFirst

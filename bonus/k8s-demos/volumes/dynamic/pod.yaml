@@ -1,0 +1,21 @@
+#
+# Slide 23 - Module 8 Storage
+# This represents a Pod that uses the PVC defined in Slide 23
+# Once you create this, the PVC will be bound and a PV dynamically created.
+#
+
+apiVersion: v1
+kind: Pod
+metadata:
+  name: app-pod
+spec:
+  containers: 
+  - name: stateful-app
+    image: 123456789012.dkr.ecr.us-west-2.amazonaws.com/hello-world-nodejs:v1.0.0
+    volumeMounts:
+    - mountPath: "/data"
+      name: data-volume
+  volumes:
+    - name: data-volume
+      persistentVolumeClaim:
+        claimName: app-pvc

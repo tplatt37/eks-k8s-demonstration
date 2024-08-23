@@ -1,0 +1,49 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  # NOTE: Best practice with a helm chart is to specify namespace using --namespace option
+  namespace: "{{ .Release.Namespace }}"
+  name: {{ .Release.Name }}
+  labels:
+    app: hello-world
+spec:
+
+  # Helm is written in Go and uses the Go text template package.  
+  # So you can do stuff like this...
+
+  {{ if .Values.replicas }}
+  replicas: {{ .Values.replicas }}
+  {{ else }}
+  replicas: 3
+  {{ end }}
+  
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 0
+      # we will temporarily surge up with extra replicas to keep us at full strength
+      # NOTE: This is showing use of a Pipeline
+      maxSurge: {{ .Values.maxSurge | default 2 }} 
+  
+  selector:
+    matchLabels:
+      app: hello-world
+  template:
+    metadata:
+      labels:
+        # Service will use this too...
+        app: hello-world
+                
+    spec:
+      containers:
+      - name: nodejs-app
+        image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+        imagePullPolicy: {{ .Values.imagePullPolicy | default "IfNotPresent" }}
+        ports:
+        - containerPort: 3000
+        resources:
+          requests:
+            cpu: "100m"
+          limits:
+            cpu: "100m"
+            

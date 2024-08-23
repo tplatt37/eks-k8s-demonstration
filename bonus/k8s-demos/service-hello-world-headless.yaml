@@ -1,0 +1,39 @@
+#
+# Example of a headless service: https://kubernetes.io/docs/concepts/services-networking/service/#headless-services
+#
+# With a headless service, you manage load balancing and discovery. No VIP or Load Balancing is done by k8s.
+#
+# k apply -f deployment.yaml
+# k apply -f service-hello-world-headless.yaml
+# k run -it --rm debug --image=nicolaka/netshoot --restart=Never -- sh
+# nslookup hello-world-headless
+# dig hello-world-headless.default.svc.cluster.local a
+# curl http://hello-world-headless.default.svc.cluster.local:3000
+# exit
+#
+# There should be 6 Pod IPs
+# NOTE: The curl above is using port 3000 (which is what the CONTAINER is listening on).
+#
+# k get ep
+#
+#
+apiVersion: v1
+kind: Service
+metadata:
+  name: hello-world-headless
+spec:
+  
+  type: ClusterIP
+  #
+  # This is what makes it headless.
+  # There will be NO Virtual IP via Iptables and therefore no load balancing.
+  # An nslookup will return multiple A records as per:
+  # https://kubernetes.io/docs/concepts/services-networking/service/#headless-services
+  #
+  clusterIP: None
+  
+  selector:
+     app: hello-world
+  ports:
+  - port: 3000
+    targetPort: 3000

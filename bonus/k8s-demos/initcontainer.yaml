@@ -1,0 +1,41 @@
+# Init Container: https://kubernetes.io/docs/concepts/workloads/pods/init-containers/
+#
+# An "Init Container" is a temporary container that runs BEFORE the main container to perform initialization
+#
+# k apply -f initcontainer.yaml
+# k get pods 
+# . NOTE THe status should be 0/1 READY Init:0/1. It will take 45 seconds.
+# You can't Exec into the main container Until AFTER THE INIT IS DONE! (That's the whole point!)
+# k exec -it init-container-pod -c nginx -- sh
+# ls -lha /usr/share/nginx/html
+# curl http://localhost
+# exit
+#
+apiVersion: v1
+kind: Pod
+metadata:
+  name: init-container-pod
+spec:
+  containers:
+  - name: nginx
+    image: nginx
+    ports:
+    - containerPort: 80
+    volumeMounts:
+    - name: workdir
+      mountPath: /usr/share/nginx/html
+  # This container(s) is run during Pod initialization
+  initContainers:
+  - name: install
+    image: busybox
+    command: ["/bin/sh", "-c"]
+    # This will download the current version of a page and save as a file.
+    # This will take 45 seconds to run, so you can see it in init status...
+    args: ["sleep 45; wget -O /work-dir/index.html http://info.cern.ch"]
+    volumeMounts:
+    - name: workdir
+      mountPath: "/work-dir"
+  dnsPolicy: Default
+  volumes:
+  - name: workdir
+    emptyDir: {}

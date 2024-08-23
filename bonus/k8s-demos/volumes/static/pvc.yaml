@@ -1,0 +1,13 @@
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: ebs-statically-provisioned-claim
+spec:
+  accessModes:
+    - ReadWriteOnce
+  storageClassName: ebs-standard
+  resources:
+    requests:
+      storage: 4Gi
+  # We're referring to the PV object specifically
+  volumeName: my-statically-provisioned-pv

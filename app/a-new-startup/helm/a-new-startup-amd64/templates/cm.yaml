@@ -1,0 +1,15 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  namespace: "{{ .Release.Namespace }}"
+  name: {{ .Release.Name }}-a-new-startup
+  labels:
+    app: a-new-startup
+data:
+  APP_TABLE_NAME: {{ .Values.tableName | quote }}
+  {{ if .Values.topicArn }}
+  # Using the SNS Topic is optional
+  APP_TOPIC_ARN: {{ .Values.topicArn | quote }}
+  {{ end }}
+  REGION: {{ .Values.region | quote }} 
+  XRAY: "ON"

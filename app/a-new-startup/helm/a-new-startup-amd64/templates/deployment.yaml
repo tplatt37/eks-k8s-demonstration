@@ -1,0 +1,130 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  # NOTE: Best practice with a helm chart is to specify namespace using --namespace option
+  # Deployment services like Spinnaker require namespace to be handled in this way (as opposed to specifying hte name space in values.yaml)
+  namespace: "{{ .Release.Namespace }}"
+  name: {{ .Release.Name }}-a-new-startup
+  labels:
+    app: a-new-startup
+spec:
+
+  # Helm is written in Go and uses the Go text template package.  
+  # So you can do stuff like this...
+
+  {{ if .Values.replicas }}
+  replicas: {{ .Values.replicas }}
+  {{ else }}
+  replicas: 3
+  {{ end }}
+  
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 0
+      # we will temporarily surge up with extra replicas to keep us at full strength
+      # NOTE: This is showing use of a Pipeline
+      maxSurge: {{ .Values.maxSurge | default 2 }} 
+  
+  selector:
+    matchLabels:
+      app: a-new-startup
+  template:
+    metadata:
+      labels:
+        # Service will use this too...
+        app: a-new-startup
+        # Include any additional labels specified. Must be indented 8 spaces.
+        # These are defined in _helpers.tpl
+        {{- include "a-new-startup.labels" . | nindent 8 }}
+        
+        # nindent - indents every line but prepends a newline to the beginning of the string
+        # https://masterminds.gihub.io/sprig/strings.html
+                
+    spec:
+
+      # This should stay commented out 
+      # It's used later ...
+      #serviceAccountName: svc-a-new-startup
+
+      tolerations:
+{{- range .Values.tolerations }}
+        - key: {{ .key }}
+          operator: {{ .operator }}
+          value: {{ .value | quote }}
+          effect: {{ .effect }}
+{{- end }}
+
+{{- if .Values.affinities }}
+      affinity:
+        nodeAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+              - matchExpressions:
+{{- range .Values.affinities }}
+                - key: {{ .key  }}
+                  operator: In
+                  values:
+                    - {{ .value | quote }}
+{{- end }}
+{{- end }}
+
+      containers:
+      
+      - name: nodejs-app
+        image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+        imagePullPolicy: {{ .Values.imagePullPolicy | default "IfNotPresent" }}
+        ports:
+        - containerPort: 3000
+        resources:
+          requests:
+            cpu: "100m"
+          limits:
+            cpu: "100m"
+            
+        env:
+        # We set these environment variables from the ConfigMap
+        - name: APP_TABLE_NAME
+          valueFrom:
+            configMapKeyRef:
+              name: {{ .Release.Name }}-a-new-startup
+              key: APP_TABLE_NAME
+        # sns topic is OPTIONAL
+        {{ if .Values.topicArn }}
+        - name: APP_TOPIC_ARN
+          valueFrom:
+            configMapKeyRef:
+              name: {{ .Release.Name }}-a-new-startup
+              key: APP_TOPIC_ARN
+        {{ end }}
+        - name: REGION
+          valueFrom:
+            configMapKeyRef:
+              name: {{ .Release.Name }}-a-new-startup
+              key: REGION
+        - name: XRAY
+          valueFrom:
+            configMapKeyRef:
+              name: {{ .Release.Name }}-a-new-startup
+              key: XRAY
+
+      # We've also got the x-ray daemon running as a sidecar.
+      # The X-Ray SDK code running in the NodeJS app will send UDP data to port 2000
+      # The daemon is responsible for uploading trace data to the cloud service.
+      - name: x-ray-daemon
+        image: public.ecr.aws/xray/aws-xray-daemon:latest
+        ports: 
+        - containerPort: 2000
+        resources:
+          requests:
+            cpu: "50m"
+          limits:
+            cpu: "50m"
+
+        # Need to set this because IMDS not available on Fargate 
+        env:
+        - name: AWS_REGION
+          valueFrom:
+            configMapKeyRef:
+              name: {{ .Release.Name }}-a-new-startup
+              key: REGION

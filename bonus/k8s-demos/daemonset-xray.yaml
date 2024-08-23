@@ -1,0 +1,53 @@
+#
+# X-Ray Daemon as a Daemonset 
+#
+# This also uses an internalTrafficPolicy=Local service so that pods will use the replica ON THE SAME NODE to minimize cross-node traffic.
+#
+# This is to show how it is setup.  There's no demo steps.
+#
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: xray
+  namespace: default
+  labels:
+    service: xray
+spec:
+  selector:
+    matchLabels:
+      name: xray
+  template:
+    metadata:
+      labels:
+        name: xray
+    spec:
+      containers:
+      - name: x-ray-daemon
+        image: public.ecr.aws/xray/aws-xray-daemon:latest
+        ports: 
+        - containerPort: 2000
+        # Need to set this because IMDS not available on Fargate 
+        env:
+        - name: AWS_REGION
+          value: "us-east-1"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: xray
+spec:
+  type: ClusterIP
+  selector:
+    name: xray
+  #
+  # OPTIONAL
+  # The kube-proxy filters the endpoints it routes to based on the spec.internalTrafficPolicy setting. When it's set to Local, only node local endpoints are considered. 
+  # When it's Cluster (the default), or is not set, Kubernetes considers all endpoints.
+  #
+  # This will minimize cross-node traffic - at the expense of some resiliency
+  #
+  internalTrafficPolicy: Local
+  
+  ports:
+  - port: 2000
+    targetPort: 2000

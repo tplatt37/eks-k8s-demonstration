@@ -1,0 +1,86 @@
+# Pod Security Standards (PSS): https://kubernetes.io/docs/concepts/security/pod-security-standards/
+#
+# Demo of Pod Security Standards (PSS) and Pod Security Admission (PSA)
+#
+# k apply -f pss.yaml
+# Should see a "Warning":
+#
+# Warning: would violate PodSecurity "restricted:latest": allowPrivilegeEscalation != false (container "hello-world" must set securityContext.allowPrivilegeEscalation=false), unrestricted capabilities (container "hello-world" must set securityContext.capabilities.drop=["ALL"]), runAsNonRoot != true (pod or container "hello-world" must set securityContext.runAsNonRoot=true), seccompProfile (pod or container "hello-world" must set securityContext.seccompProfile.type to "RuntimeDefault" or "Localhost")
+#
+# AND
+# 
+#Error from server (Forbidden): error when creating "pss.yaml": pods "pod-demo" is forbidden: violates PodSecurity "restricted:latest": allowPrivilegeEscalation != false (container "hello-world" must set securityContext.allowPrivilegeEscalation=false), unrestricted capabilities (container "hello-world" must set securityContext.capabilities.drop=["ALL"]), runAsNonRoot != true (pod or container "hello-world" must set securityContext.runAsNonRoot=true), seccompProfile (pod or container "hello-world" must set securityContext.seccompProfile.type to "RuntimeDefault" or "Localhost")
+#
+# To cleanup - delete all the ns.
+# k delete ns pss-demo-audit --force; k delete ns pss-demo-enforce --force; k delete pss-demo-warn --force
+#
+# To see "Audit" entries - these go into the Control Plane Audit log. 
+# Run this logs insights queries - 
+# fields @message | filter objectRef.namespace = 'pss-demo-audit'
+#
+
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: pss-demo-warn
+  labels:
+    pod-security.kubernetes.io/warn: restricted
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: pss-demo-audit
+  labels:
+    pod-security.kubernetes.io/audit: restricted
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: pss-demo-enforce
+  labels:
+    pod-security.kubernetes.io/enforce: restricted
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: pod-demo
+  namespace: pss-demo-warn
+  labels:
+    demo: deploy
+spec:
+    containers:
+    - name: hello-world
+      image: 123456789012.dkr.ecr.us-east-1.amazonaws.com/hello-world-nodejs:v1.0.0
+      ports:
+      - containerPort: 8080
+        name: nodejs
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: pod-demo
+  namespace: pss-demo-audit
+  labels:
+    demo: deploy
+spec:
+    containers:
+    - name: hello-world
+      image: 123456789012.dkr.ecr.us-east-1.amazonaws.com/hello-world-nodejs:v1.0.0
+      ports:
+      - containerPort: 3000
+        name: nodejs
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: pod-demo
+  namespace: pss-demo-enforce
+  labels:
+    demo: deploy
+spec:
+    containers:
+    - name: hello-world
+      image: 123456789012.dkr.ecr.us-east-1.amazonaws.com/hello-world-nodejs:v1.0.0
+      ports:
+      - containerPort: 3000
+        name: nodejs

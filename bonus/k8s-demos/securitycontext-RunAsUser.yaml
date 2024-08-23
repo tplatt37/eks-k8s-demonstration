@@ -1,0 +1,52 @@
+# Demo of a simple deployment
+# with securityContext
+#
+#
+# k apply -f deployment-demo.yaml
+# k exec -it po/PODNAME -- /bin/sh
+# ps aux
+#
+# NOTE: User colunm should show "node" rather than "root"
+#
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: deploy-demo
+  labels:
+    demo: deploy
+spec:
+  selector:
+    matchLabels:
+      demo: deploy
+  replicas: 4
+  template:
+    metadata:
+      labels:
+        demo: deploy
+    spec:
+      securityContext:
+        
+        # k explain pod.spec.securityContext.runAsUser
+        # "runAsUser" =The UID to run the entrypoint of the container process. Defaults to user
+        # specified in image metadata if unspecified.
+        # This will OVERRIDE whatever is specified in the image metadata...
+        # User 1000 is the Node user built into this particular base image.
+        runAsUser: 1000
+        runAsGroup: 3000
+        fsGroup: 2000
+        
+      containers:
+      - name: hello-world
+        image: 123456789012.dkr.ecr.us-east-1.amazonaws.com/hello-world-nodejs:v1.0.0
+        ports:
+        - containerPort: 3000
+          name: nodejs
+          
+        securityContext:
+          # k explain pod.spec.containers.securityContext.allowPrivilegeEscalation
+          # AllowPrivilegeEscalation controls whether a process can gain more
+          # privileges than its parent process. This bool directly controls if the
+          # no_new_privs flag will be set on the container process.
+          allowPrivelegeEscalation: false
+

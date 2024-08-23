@@ -1,0 +1,50 @@
+# Demonstrates Probes - Startup, Readiness, and Liveness
+#
+# Explains the key differences between the 3 different probe types
+#
+# k apply -f probes-demo.yaml && watch kubectl get all
+# You will see it takes ahilw for it to go to 1/1 READY 
+# Wait at least 60 seconds , then 
+# Ctrl+C
+# k get po
+# k logs probe-demo
+# k describe pods/probe-demo
+#   Show Probes, Conditions and Events
+# k get po
+#  Show it is up and running with no restarts after the startupProbe succeeds.
+#
+apiVersion: v1
+kind: Pod
+metadata:
+  name: probe-demo
+spec:
+  containers:
+  # Simple Hello World app that sleeps 30 seconds before it starts listening on port 8080 for GETs
+  - image: 123456789012.dkr.ecr.us-east-1.amazonaws.com/hello-world-nodejs:v1.0.0 
+    name: hello-world
+    # kubelet puts Readiness and Liveness probes on hold
+    # while the startup probe is running
+    # After this startupProbe succeeds one time, the other probes take over.
+    # This lets us have a really long, slow startup period - like for some sort of legacy app
+    # In this case, the startup can take up to 5 minutes (30 x 10s = 300 seconds = 5 minutes)
+    startupProbe:
+      tcpSocket:
+        port: 3000
+      periodSeconds: 10
+      failureThreshold: 30
+    # Check and make sure container is alive
+    # If it is NOT alive, it's gonna be RESTARTED 
+    livenessProbe:
+      httpGet:
+        path: /alive
+        port: 3000
+      failureThreshold: 2
+      periodSeconds: 5
+    # Check if the container is ready to accept traffic.
+    # If this passes, any SERVICE may start load balancing traffic to this container.
+    readinessProbe:
+      httpGet:
+        path: /ready
+        port: 3000
+      failureThreshold: 2
+      periodSeconds: 5

@@ -1,0 +1,35 @@
+# CronJob: https://kubernetes.io/docs/concepts/workloads/controllers/cron-jobs/
+#
+# k apply -f cronjob.yaml
+# k get cronjob -A
+#
+# If you want to watch the full lifecycle:
+# watch kubectl get all po,job 
+#
+# Watch for a few minutes and you'll see Jobs start, to to Running, then Completed, etc.
+#
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: cronjob-demo
+  namespace: default
+spec:
+  # Run every three minutes
+  schedule: "*/2 * * * *"
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          containers:
+          - args:
+            - /bin/sh
+            - -c
+            # Simulating an actual, useful job
+            # This will take about 30 seconds to complete
+            - 'for i in 1 2 3 4 5 6 7 8 9 10; do echo "Hello! Loop $i times"; sleep 3; done;'
+            image: busybox
+            name: job01 
+          # Still need this! It's required for a Job.
+          # Only a RestartPolicy equal to Never or OnFailure is allowed.
+          restartPolicy: OnFailure
+          dnsPolicy: ClusterFirst

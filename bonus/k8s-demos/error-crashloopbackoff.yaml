@@ -1,0 +1,35 @@
+# A CrashLoopBackoff error
+#
+# Need a "Bad" pod for a demo? Use this.
+#
+#
+# This Deployment tries to run a container that exits quickly "echo Hello World"
+# It will constantly be in CrashLoopBackoff state because a ReplicaSet
+# is expecting the container process to run continuously.
+#
+# If you want to run pod replicas in a batch fashion - use a Job instead (see job.yaml)
+#
+#
+#
+apiVersion: apps/v1 
+kind: Deployment 
+metadata: 
+  name: ubuntu-deployment 
+  labels: 
+    app: ubuntu 
+spec: 
+  replicas: 3 
+  selector: 
+    matchLabels: 
+      app: ubuntu 
+  template:
+    metadata: 
+      labels:
+        app: ubuntu
+    spec:
+      containers:
+      - name: ubuntu 
+        image: ubuntu:20.04
+        command: ["echo"]
+        args: ["Hello World"] 
+  

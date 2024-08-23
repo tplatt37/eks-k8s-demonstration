@@ -1,0 +1,27 @@
+# Ephemeral Volume : https://kubernetes.io/docs/concepts/storage/ephemeral-volumes/
+# 
+# This "emptyDir" storage starts blank/empty and goes away when the Pod is deleted.
+#
+# k apply -f ephemeral-demo.yaml
+# k exec -it po/my-app -- /bin/sh
+# ls -lha /cache
+# df -h
+# echo "Test file" >> /cache/test.txt
+# ls -lha /cache
+#
+#
+apiVersion: v1
+kind: Pod
+metadata:
+  name: my-app
+spec:
+  containers:
+    - name: my-app
+      image: 123456789012.dkr.ecr.us-east-1.amazonaws.com/hello-world-nodejs:v1.0.0
+      volumeMounts:
+      - name: myapp-volume
+        mountPath: /cache
+  volumes:
+    - name: myapp-volume
+      # "empty at Pod startup, with storage coming locally from the kubelet base directory (usually the root disk) or RAM"
+      emptyDir: {}

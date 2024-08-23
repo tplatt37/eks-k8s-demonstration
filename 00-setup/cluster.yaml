@@ -1,0 +1,106 @@
+apiVersion: eksctl.io/v1alpha5
+kind: ClusterConfig
+
+#
+# Config File Schema docs: https://eksctl.io/usage/schema/
+# or 
+# eksctl utils schema
+#
+
+metadata:
+  name: eks-demo
+  region: us-west-2
+  version: "1.28"
+
+kubernetesNetworkConfig: 
+  serviceIPv4CIDR: 10.100.0.0/16
+
+availabilityZones: ["us-west-2a", "us-west-2b"]
+
+# These aren't used for anything other than to show you HOW 
+# to add an IAM User or IAM Role to the aws-auth configmap.
+# Note that the account is a placeholder.
+# https://eksctl.io/usage/iam-identity-mappings/
+iamIdentityMappings:
+  - arn: "arn:aws:iam::123456789012:user/example-user"
+    username: example-user
+  - arn: "arn:aws:iam::123456789012:role/example-role"
+    username: example-iam-role
+    
+iam:
+  # Needed for IRSA
+  withOIDC: true
+
+  # This will create k8s Service Accounts associated with IAM Roles (dynamically created)
+  # for various key services.
+  serviceAccounts:
+  - metadata:
+      # Don't change this name.  The YAML manifests used to install the Autoscaler assume there will be an SA named as such
+      name: cluster-autoscaler
+      namespace: kube-system
+    wellKnownPolicies:
+      autoScaler: true
+  - metadata:
+      name: aws-load-balancer-controller
+      namespace: kube-system
+    wellKnownPolicies:
+      awsLoadBalancerController: true
+
+# https://eksctl.io/usage/addons/
+addons:
+  - name: vpc-cni
+    version: latest
+  - name: coredns
+    version: latest
+  - name: kube-proxy
+    version: latest
+  - name: aws-ebs-csi-driver
+    version: latest
+  - name: amazon-cloudwatch-observability
+    version: latest
+
+# In the roadmap: https://github.com/aws/containers-roadmap/issues/261
+#  - name: metrics-server
+#    version: latest
+
+ # This is being worked on , but not yet available: https://github.com/aws/containers-roadmap/issues/1162
+ # - name: aws-load-balancer-controller
+ #   version: latest
+ #   wellKnownPolicies:
+ #     awsLoadBalancerController: true
+ 
+managedNodeGroups:
+  - name: nodegroup-1
+    instanceType: m5.large
+    minSize: 2
+    desiredCapacity: 2
+    maxSize: 4
+    volumeEncrypted: true
+    privateNetworking: true
+    iam:
+      withAddonPolicies:
+        albIngress: true
+        cloudWatch: true
+        autoScaler: true
+        ebs: true
+        xRay: true
+
+# https://eksctl.io/usage/fargate-support/
+# https://docs.aws.amazon.com/eks/latest/userguide/fargate.html 
+fargateProfiles:
+  - name: on-fargate
+    selectors:
+      # All workloads in the "on-fargate" Kubernetes namespace will be
+      # scheduled onto Fargate:
+      - namespace: on-fargate
+  # This profile matches the one in Module 2
+  - name: myprofile
+    selectors: 
+    - namespace: prod
+      labels: 
+       stack: frontend
+#
+cloudWatch:
+    clusterLogging:
+        enableTypes: ["api", "audit", "authenticator", "controllerManager", "scheduler"]
+          

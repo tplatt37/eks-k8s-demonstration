@@ -1,0 +1,13 @@
+# This is Slide 11 , Module 1 : "Define Pods with PodSpecs"
+apiVersion: v1
+kind: Pod
+metadata:
+  name: webapp
+  labels:
+    app.kubernetes.io/name: webapp
+spec:
+  containers:
+  - name: nginx
+    image: nginx:1.25.1
+    ports:
+    - containerPort: 80

@@ -1,0 +1,35 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  # NOTE: Best practice with a helm chart is to specify namespace using --namespace option
+  namespace: "{{ .Release.Namespace }}"
+  name: {{ .Release.Name }}-ingress
+  annotations:
+    # This results in an ALB (Application Load Balancer) - a Layer 7 ELB that can sit in front of
+    # MULTIPLE services for cost efficiency (ELBs have an hourly fee regardless of usage!)
+    # https://kubernetes-sigs.github.io/aws-load-balancer-controller/v2.2/guide/ingress/annotations/
+    # (DEPRECATED) kubernetes.io/ingress.class: alb
+    alb.ingress.kubernetes.io/scheme: internet-facing
+    alb.ingress.kubernetes.io/target-type: ip
+
+    # Can restrct inbound access via:
+    # alb.ingress.kubernetes.io/inbound-cidrs: 10.0.0.0/24, 1.2.3.4/32
+    #
+    {{- if .Values.loadBalancerSourceRanges }}
+    {{- $formattedIPRanges := join ", " .Values.loadBalancerSourceRanges }}
+    alb.ingress.kubernetes.io/inbound-cidrs: {{ $formattedIPRanges }}
+    {{- end }}
+
+spec:
+  # This is the new way to specify ingress class.
+  ingressClassName: alb
+  rules:
+    - http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: {{ .Release.Name }}-nodeport
+                port:
+                  number: 80

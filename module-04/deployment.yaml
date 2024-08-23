@@ -1,0 +1,25 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: a-new-startup 
+spec:
+  selector:
+    matchLabels:
+      app: a-new-startup
+  replicas: 2
+  template:
+    metadata:
+      labels:
+        app: a-new-startup 
+    spec:
+      containers:
+      - name: app
+        # You must replace these values
+        image: YOUR_URI:YOUR_TAG
+        ports:
+        - containerPort: 3000
+        env:
+          - name: APP_TABLE_NAME
+            value: a-new-startup-dev
+          - name: REGION
+            value: us-west-2

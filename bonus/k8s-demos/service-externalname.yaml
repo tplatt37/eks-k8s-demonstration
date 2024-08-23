@@ -1,0 +1,34 @@
+# ExternalName Service: https://kubernetes.io/docs/concepts/services-networking/service/#externalname
+#
+# It's the simplest of services - it's just a k8s DNS CNAME record!
+#
+#
+# k apply -f service-externalname.yaml 
+# 
+# Run BusyBox:
+# k run -i --tty --rm debug --image=busybox --restart=Never -- sh
+#
+# nslookup database.default.svc.cluster.local
+#
+# NOTE: Busybox 1.28 doesn't correctly return the CNAME!
+# Use Alpine instead:
+# k exec -it po/PODNAME -n NAMESPACE -- /bin/sh
+# nslookup database.default.svc.cluster.local
+# 
+
+apiVersion: v1
+kind: Service
+metadata:
+  # We'll be able to resolve this as
+  # nslookup database.default.svc.cluster.local
+  name: database
+  namespace: default
+spec:
+  type: ExternalName
+  #
+  # This represents an RDS Endpoint for an Aurora Serverless (MySQL) Database.
+  # In the event that this endpoint changes, we can simply update the externalName here
+  # and within the k8s cluster the service "alias" won't have to be updated (after TTL expires)
+  # NOTE: This endpoint of course DOES NOT WORK. But you can show the name resolution regardless.
+  #
+  externalName: random-aurora-cluster-rdscluster-1tm0fp1zi5m99.cluster-ci7jjglvvf41.us-east-1.rds.amazonaws.com

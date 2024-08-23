@@ -1,0 +1,81 @@
+# A Postgres cluster via StatefulSet (ss) and Headless service
+# https://kubernetes.io/docs/concepts/workloads/controllers/statefulset/
+#
+# k apply -f statefulset.yaml
+# k get all
+# k get pv
+# k rollout restart sts postres && k get all
+#
+# Optionally, you can connect (if you have psql installed and Security Group/ACLs in place):
+# psql -h POD_IP -p 5432 -U postgres
+#
+# Note that pod replicas are named as -0, -1, -2, etc.
+# Note that there is a volume per Pod replica.
+# When we rollout restart, they are terminated in reverse order (2, then 1, then 0)
+# Note that the replacement pods mount the SAME STORAGE VOLUMES (that's the whole idea!)
+# Note that the replacement pods have the SAME NAMES (DNS) - but could be different IPs! (Don't tightly couple to IP!)
+# DNS names will be like :  postgres-0.postgres.default.svc.cluster.local
+#
+# NOTE: Requires EBS CSI Driver and uses the default gp2 storageclass.
+# NOTE: The actual replication from one to another (repmgr) is NOT implemented in this simple example.
+# NOTE: You must manually delete the PVs after deleting the statefulset - that's how it's meant to work for data safety
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: postgres
+spec:
+  # Headless Service (no load balancing)! Do your own service discovery. For example, if -0 is the "primary" you need
+  # to connect to that for writes, and use the others (-1, -2) for reads.
+  clusterIP: None
+  ports:
+  - name: postgres
+    port: 5432
+    protocol: TCP
+  selector:
+    app: postgres
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: postgres
+spec:
+  # This is used in the DNS name
+  # DNS names will be like:
+  # postgres-0.postgres.default.svc.cluster.local
+  serviceName: postgres
+  replicas: 3
+  selector:
+    matchLabels:
+      app: postgres
+  template:
+    metadata:
+      labels:
+        app: postgres
+    spec:
+      containers:
+      - name: postgres
+        image: postgres
+        ports:
+        - containerPort: 5432
+          name: postgres
+        env:
+        - name: POSTGRES_PASSWORD
+          value: "password"
+        - name: PGDATA
+          value: /data/pgdata
+        volumeMounts:
+        - name: postgres-volume
+          mountPath: /data
+  volumeClaimTemplates:
+  - metadata:
+     name: postgres-volume
+    spec:
+      storageClassName: gp2 
+      accessModes:
+        - ReadWriteOnce
+      resources:
+        requests:
+          storage: 5Gi
+          
+    

@@ -1,0 +1,22 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: load-generator
+spec:
+  replicas: 4
+  selector:
+    matchLabels:
+      app: load-generator
+  template:
+    metadata:
+      labels:
+        app: load-generator
+    spec:
+      containers:
+      - image: busybox
+        name: busybox
+        command:
+        - sh
+        - -c
+        # This is an endless tight loop - hammer the service to drive up CPU!
+        - "while true; do wget -q -O- http://demo-hpa; done"

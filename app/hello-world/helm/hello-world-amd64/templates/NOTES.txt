@@ -1,0 +1,10 @@
+A simple NodeJS container image that can be used in Docker and k8s demos.
+
+The container listens on Port 3000 and returns a web page (for any GET request):
+
+* "Hello World!"
+* A version number
+* CSS Styled
+* Linux date/time stamp and the hostname (Pod name!) 
+
+(This file is displayed when someone runs a helm install command)

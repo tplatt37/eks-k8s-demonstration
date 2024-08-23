@@ -1,0 +1,46 @@
+# Job: https://kubernetes.io/docs/concepts/workloads/controllers/job/
+#
+#
+# NOTE: If you have a Fargate Profile for ns=on-fargate, this Job will run on Fargate - which is a killer use case for Fargate IMO.
+#
+# k apply -f job.yaml && watch kubectl get all -n on-fargate
+#
+# It will take 60 seconds for the jobs to start, running on fargate and then go to "Completed"
+# 
+# You should clean up to get the fargates to go away:
+# k delete -f job.yaml
+#
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: on-fargate
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  labels:
+    app: job-demo
+  name: job-demo
+  # Run this in mynamespace space so it'll be picked up by the fargate profile when that's active.
+  # If the fargate profile doesn't exist, it will just run on ec2.
+  namespace: on-fargate
+spec:
+  # This will run 3 jobs (pod replicas) in parallel
+  parallelism: 3
+  template:
+    metadata:
+      labels:
+        app: fargate-demo
+    spec:
+      containers:
+      - args:
+        - /bin/sh
+        - -c
+        # This will take about 60 seconds to complete
+        - 'for i in 1 2 3 4 5 6 7 8 9 10; do echo "Hello! Loop $i times"; sleep 6; done;'
+        image: busybox
+        name: job01 
+      # Still need this! It's required for a Job.
+      # Only a RestartPolicy equal to Never or OnFailure is allowed.
+      restartPolicy: OnFailure
+      dnsPolicy: ClusterFirst

@@ -1,0 +1,1 @@
+NOTES.txt - The contents of this file (which can include templating) will be displayed to the user when installing/upgrading.

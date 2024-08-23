@@ -1,0 +1,17 @@
+# Storage Class
+#
+apiVersion: storage.k8s.io/v1
+kind: StorageClass
+metadata:
+  name: ebs-gp3-encrypted
+provisioner: ebs.csi.aws.com
+volumeBindingMode: WaitForFirstConsumer
+allowVolumeExpansion: true
+# Any dynamically created volume from this Storage Class will automatically be deleted after the PVC is deleted.
+# What's the point then of using this "Persistent" volume?
+# An EBS GP3 volume will give us high performance and we won't fill up all the space on the Worker Node.
+# 
+reclaimPolicy: Delete
+parameters:
+  type: gp3
+  encrypted: "true"
